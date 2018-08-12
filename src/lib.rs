@@ -43,25 +43,25 @@ impl std::fmt::Display for SystrayError {
     }
 }
 
-pub struct Application {
+pub struct Application<'a> {
     window: api::api::Window,
     menu_idx: u32,
-    callback: HashMap<u32, Callback>,
+    callback: HashMap<u32, Callback<'a>>,
     // Each platform-specific window module will set up its own thread for
     // dealing with the OS main loop. Use this channel for receiving events from
     // that thread.
     rx: Receiver<SystrayEvent>,
 }
 
-type Callback = Box<(Fn(&mut Application) -> () + 'static)>;
+type Callback<'a> = Box<(Fn(&mut Application) -> () + 'a)>;
 
-fn make_callback<F>(f: F) -> Callback
-    where F: std::ops::Fn(&mut Application) -> () + 'static {
-    Box::new(f) as Callback
+fn make_callback<'a, F>(f: F) -> Callback<'a>
+    where F: std::ops::Fn(&mut Application) -> () + 'a {
+    Box::new(f) as Callback<'a>
 }
 
-impl Application {
-    pub fn new() -> Result<Application, SystrayError> {
+impl<'a> Application<'a> {
+    pub fn new() -> Result<Application<'a>, SystrayError> {
         let (event_tx, event_rx) = channel();
         match api::api::Window::new(event_tx) {
             Ok(w) => Ok(Application {
@@ -128,8 +128,7 @@ impl Application {
                     break;
                 }
             }
-            if self.callback.contains_key(&msg.menu_index) {
-                let f = self.callback.remove(&msg.menu_index).unwrap();
+            if let Some(f) = self.callback.remove(&msg.menu_index) {
                 f(self);
                 self.callback.insert(msg.menu_index, f);
             }
@@ -137,7 +136,7 @@ impl Application {
     }
 }
 
-impl Drop for Application {
+impl<'a> Drop for Application<'a> {
     fn drop(&mut self) {
         self.shutdown().ok();
     }
