@@ -20,7 +20,7 @@ extern crate libappindicator;
 pub mod api;
 
 use std::collections::HashMap;
-use std::sync::mpsc::{channel, Receiver};
+use std::sync::mpsc::{channel, Receiver, Sender};
 
 #[derive(Clone, Debug)]
 pub enum SystrayError {
@@ -29,6 +29,7 @@ pub enum SystrayError {
     UnknownError,
 }
 
+#[derive(Clone, Copy)]
 pub struct SystrayEvent {
     menu_index: u32,
 }
@@ -51,6 +52,7 @@ pub struct Application<'a> {
     // dealing with the OS main loop. Use this channel for receiving events from
     // that thread.
     rx: Receiver<SystrayEvent>,
+    pub tx: Option<Sender<SystrayEvent>>
 }
 
 type Callback<'a> = Box<(Fn(&mut Application) -> () + 'a)>;
@@ -63,26 +65,35 @@ fn make_callback<'a, F>(f: F) -> Callback<'a>
 impl<'a> Application<'a> {
     pub fn new() -> Result<Application<'a>, SystrayError> {
         let (event_tx, event_rx) = channel();
-        match api::api::Window::new(event_tx) {
+        match api::api::Window::new(event_tx.clone()) {
             Ok(w) => Ok(Application {
                 window: w,
                 menu_idx: 0,
                 callback: HashMap::new(),
-                rx: event_rx
+                rx: event_rx,
+                tx: Some(event_tx)
             }),
             Err(e) => Err(e)
         }
     }
 
+    pub fn add_callback<F>(&mut self, f: F) -> u32
+        where F: std::ops::Fn(&mut Application) -> () + 'a
+    {
+        let idx = self.menu_idx;
+        self.callback.insert(idx, make_callback(f));
+        self.menu_idx += 1;
+        idx
+    }
+
     pub fn add_menu_item<F>(&mut self, item_name: &String, f: F) -> Result<u32, SystrayError>
-        where F: std::ops::Fn(&mut Application) -> () + 'static {
+        where F: std::ops::Fn(&mut Application) -> () + 'a
+    {
         let idx = self.menu_idx;
         if let Err(e) = self.window.add_menu_entry(idx, item_name) {
             return Err(e);
         }
-        self.callback.insert(idx, make_callback(f));
-        self.menu_idx += 1;
-        Ok(idx)
+        Ok(self.add_callback(f))
     }
 
     pub fn add_menu_separator(&mut self) -> Result<u32, SystrayError> {
@@ -107,6 +118,7 @@ impl<'a> Application<'a> {
     }
 
     pub fn shutdown(&self) -> Result<(), SystrayError> {
+        self.tx = None;
         self.window.shutdown()
     }
 
@@ -115,6 +127,7 @@ impl<'a> Application<'a> {
     }
 
     pub fn quit(&mut self) {
+        self.tx = None;
         self.window.quit()
     }
 
