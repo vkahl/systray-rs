@@ -102,6 +102,10 @@ impl Application {
         self.window.set_icon_from_resource(resource)
     }
 
+    pub fn set_icon_from_buffer(&self, buffer: &[u8], width: u32, height: u32) -> Result<(), SystrayError> {
+        self.window.set_icon_from_buffer(buffer, width, height)
+    }
+
     pub fn shutdown(&self) -> Result<(), SystrayError> {
         self.window.shutdown()
     }
