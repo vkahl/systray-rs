@@ -118,7 +118,6 @@ impl<'a> Application<'a> {
     }
 
     pub fn shutdown(&self) -> Result<(), SystrayError> {
-        self.tx = None;
         self.window.shutdown()
     }
 
