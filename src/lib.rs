@@ -126,8 +126,8 @@ impl<'a> Application<'a> {
     }
 
     pub fn quit(&mut self) {
+        self.window.quit();
         self.tx = None;
-        self.window.quit()
     }
 
     pub fn wait_for_message(&mut self) {
@@ -150,6 +150,7 @@ impl<'a> Application<'a> {
 
 impl<'a> Drop for Application<'a> {
     fn drop(&mut self) {
-        self.shutdown().ok();
+        self.shutdown().unwrap();
+        self.tx = None;
     }
 }
