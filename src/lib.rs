@@ -44,6 +44,12 @@ impl std::fmt::Display for SystrayError {
     }
 }
 
+impl From<u32> for SystrayEvent {
+    fn from(menu_index: u32) -> Self {
+        Self{menu_index: menu_index}
+    }
+}
+
 pub struct Application<'a> {
     window: api::api::Window,
     menu_idx: u32,
