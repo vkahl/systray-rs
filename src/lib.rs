@@ -50,6 +50,12 @@ impl From<u32> for SystrayEvent {
     }
 }
 
+impl Into<u32> for SystrayEvent {
+    fn into(self) -> u32 {
+        self.menu_index
+    }
+}
+
 pub struct Application<'a> {
     window: api::api::Window,
     menu_idx: u32,
@@ -83,16 +89,16 @@ impl<'a> Application<'a> {
         }
     }
 
-    pub fn add_callback<F>(&mut self, f: F) -> u32
+    pub fn add_callback<F>(&mut self, f: F) -> SystrayEvent
         where F: std::ops::Fn(&mut Application) -> () + 'a
     {
         let idx = self.menu_idx;
         self.callback.insert(idx, make_callback(f));
         self.menu_idx += 1;
-        idx
+        SystrayEvent::from(idx)
     }
 
-    pub fn add_menu_item<F>(&mut self, item_name: &String, f: F) -> Result<u32, SystrayError>
+    pub fn add_menu_item<F>(&mut self, item_name: &String, f: F) -> Result<SystrayEvent, SystrayError>
         where F: std::ops::Fn(&mut Application) -> () + 'a
     {
         let idx = self.menu_idx;
