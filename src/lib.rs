@@ -64,7 +64,7 @@ pub struct Application<'a> {
     // dealing with the OS main loop. Use this channel for receiving events from
     // that thread.
     rx: Receiver<SystrayEvent>,
-    pub tx: Option<Sender<SystrayEvent>>
+    tx: Option<Sender<SystrayEvent>>
 }
 
 type Callback<'a> = Box<(Fn(&mut Application) -> () + 'a)>;
@@ -87,6 +87,10 @@ impl<'a> Application<'a> {
             }),
             Err(e) => Err(e)
         }
+    }
+
+    pub fn get_sender(&self) -> Sender<SystrayEvent> {
+        self.tx.clone().unwrap()
     }
 
     pub fn add_callback<F>(&mut self, f: F) -> SystrayEvent
