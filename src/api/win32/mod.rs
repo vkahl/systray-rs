@@ -1,6 +1,6 @@
 mod winapipatch;
 use self::winapipatch::*;
-use {SystrayEvent, SystrayError};
+use crate::{SystrayEvent, SystrayError};
 use std;
 use std::sync::mpsc::{channel, Sender};
 use std::os::windows::ffi::OsStrExt;
