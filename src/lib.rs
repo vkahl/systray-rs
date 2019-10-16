@@ -59,7 +59,7 @@ impl Into<u32> for SystrayEvent {
 pub struct Application<'a> {
     window: api::api::Window,
     menu_idx: u32,
-    callback: HashMap<u32, Callback<'a>>,
+    callback: HashMap<u32, Option<Callback<'a>>>,
     // Each platform-specific window module will set up its own thread for
     // dealing with the OS main loop. Use this channel for receiving events from
     // that thread.
@@ -69,9 +69,9 @@ pub struct Application<'a> {
 
 type Callback<'a> = Box<(Fn(&mut Application) -> () + 'a)>;
 
-fn make_callback<'a, F>(f: F) -> Callback<'a>
+fn make_callback<'a, F>(f: F) -> Option<Callback<'a>>
     where F: std::ops::Fn(&mut Application) -> () + 'a {
-    Box::new(f) as Callback<'a>
+    Some(Box::new(f) as Callback<'a>)
 }
 
 impl<'a> Application<'a> {
@@ -156,10 +156,12 @@ impl<'a> Application<'a> {
                     break;
                 }
             }
-            if let Some(f) = self.callback.remove(&msg.menu_index) {
-                f(self);
-                self.callback.insert(msg.menu_index, f);
-            }
+            let callback_function = match self.callback.get_mut(&msg.menu_index) {
+                Some(callback_option) => callback_option.take().unwrap(),
+                None => continue,
+            };
+            callback_function(self);
+            self.callback.get_mut(&msg.menu_index).unwrap().replace(callback_function);
         }
     }
 }
