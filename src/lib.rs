@@ -67,7 +67,7 @@ pub struct Application<'a> {
     tx: Option<Sender<SystrayEvent>>
 }
 
-type Callback<'a> = Box<(Fn(&mut Application) -> () + 'a)>;
+type Callback<'a> = Box<(dyn Fn(&mut Application) -> () + 'a)>;
 
 fn make_callback<'a, F>(f: F) -> Option<Callback<'a>>
     where F: std::ops::Fn(&mut Application) -> () + 'a {
