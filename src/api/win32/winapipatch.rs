@@ -2,8 +2,17 @@
 #![allow(dead_code)]
 #![allow(non_snake_case)]
 
-use winapi::{DWORD, LPMENUITEMINFOA, LPMENUITEMINFOW, c_int, RECT, UINT, BOOL, ULONG_PTR, CHAR, GUID, WCHAR};
-use winapi::windef::{HWND, HMENU, HICON, HBRUSH, HBITMAP};
+use winapi::{
+    ctypes::c_int,
+    shared::{
+        basetsd::ULONG_PTR,
+        guiddef::GUID,
+        minwindef::{BOOL, DWORD, UINT},
+        ntdef::{CHAR, WCHAR},
+        windef::{HBITMAP, HBRUSH, HICON, HMENU, HWND, RECT},
+    },
+    um::winuser::{LPMENUITEMINFOA, LPMENUITEMINFOW},
+};
 
 macro_rules! UNION {
     ($base:ident, $field:ident, $variant:ident, $variantmut:ident, $fieldtype:ty) => {
@@ -17,7 +26,7 @@ macro_rules! UNION {
                 ::std::mem::transmute(&mut self.$field)
             }
         }
-    }
+    };
 }
 
 macro_rules! STRUCT {
@@ -43,17 +52,39 @@ extern "system" {
     pub fn GetMenuInfo(hMenu: HMENU, lpcmi: LPMENUINFO) -> BOOL;
     pub fn GetMenuItemCount(hMenu: HMENU) -> c_int;
     pub fn GetMenuItemID(hMenu: HMENU, nPos: c_int) -> UINT;
-    pub fn GetMenuItemInfoA(hMenu: HMENU, uItem: UINT, fByPosition: BOOL, lpmii: LPMENUITEMINFOA) -> BOOL;
-    pub fn GetMenuItemInfoW(hMenu: HMENU, uItem: UINT, fByPosition: BOOL, lpmii: LPMENUITEMINFOW) -> BOOL;
+    pub fn GetMenuItemInfoA(
+        hMenu: HMENU,
+        uItem: UINT,
+        fByPosition: BOOL,
+        lpmii: LPMENUITEMINFOA,
+    ) -> BOOL;
+    pub fn GetMenuItemInfoW(
+        hMenu: HMENU,
+        uItem: UINT,
+        fByPosition: BOOL,
+        lpmii: LPMENUITEMINFOW,
+    ) -> BOOL;
     pub fn SetMenuInfo(hMenu: HMENU, lpcmi: LPCMENUINFO) -> BOOL;
-    pub fn TrackPopupMenu(hMenu: HMENU, uFlags: UINT, x: c_int, y: c_int, nReserved: c_int,
-                          hWnd: HWND, prcRect: *const RECT);
-    pub fn TrackPopupMenuEx(hMenu: HMENU, fuFlags: UINT, x: c_int, y: c_int, hWnd: HWND,
-                            lptpm: LPTPMPARAMS);
+    pub fn TrackPopupMenu(
+        hMenu: HMENU,
+        uFlags: UINT,
+        x: c_int,
+        y: c_int,
+        nReserved: c_int,
+        hWnd: HWND,
+        prcRect: *const RECT,
+    );
+    pub fn TrackPopupMenuEx(
+        hMenu: HMENU,
+        fuFlags: UINT,
+        x: c_int,
+        y: c_int,
+        hWnd: HWND,
+        lptpm: LPTPMPARAMS,
+    );
     pub fn Shell_NotifyIconA(dwMessage: DWORD, lpData: PNOTIFYICONDATAA) -> BOOL;
     pub fn Shell_NotifyIconW(dwMessage: DWORD, lpData: PNOTIFYICONDATAW) -> BOOL;
 }
-
 
 pub const NIM_ADD: DWORD = 0x00000000;
 pub const NIM_MODIFY: DWORD = 0x00000001;
@@ -71,7 +102,7 @@ pub const NIF_SHOWTIP: UINT = 0x00000080;
 pub const NOTIFYICON_VERSION: UINT = 3;
 pub const NOTIFYICON_VERSION_4: UINT = 4;
 
-STRUCT!{nodebug struct NOTIFYICONDATAA {
+STRUCT! {nodebug struct NOTIFYICONDATAA {
     cbSize: DWORD,
     hWnd: HWND,
     uID: UINT,
@@ -92,7 +123,7 @@ UNION!(NOTIFYICONDATAA, uTimeout, uTimeout, uTimeout_mut, UINT);
 UNION!(NOTIFYICONDATAA, uTimeout, uVersion, uVersion_mut, UINT);
 pub type PNOTIFYICONDATAA = *mut NOTIFYICONDATAA;
 
-STRUCT!{nodebug struct NOTIFYICONDATAW {
+STRUCT! {nodebug struct NOTIFYICONDATAW {
     cbSize: DWORD,
     hWnd: HWND,
     uID: UINT,
@@ -168,7 +199,7 @@ pub const MNS_DRAGDROP: UINT = 0x20000000;
 pub const MNS_MODELESS: UINT = 0x40000000;
 pub const MNS_NOCHECK: UINT = 0x80000000;
 
-STRUCT!{struct MENUINFO {
+STRUCT! {struct MENUINFO {
     cbSize: DWORD,
     fMask: DWORD,
     dwStyle: DWORD,
@@ -196,7 +227,7 @@ pub const TPM_NOANIMATION: UINT = 0x4000;
 pub const TPM_VERNEGANIMATION: UINT = 0x2000;
 pub const TPM_VERPOSANIMATION: UINT = 0x1000;
 
-STRUCT!{struct TPMPARAMS {
+STRUCT! {struct TPMPARAMS {
     cbSize: UINT,
     rcExclude: RECT,
 }}

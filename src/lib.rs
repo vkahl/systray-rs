@@ -2,20 +2,16 @@
 
 #[macro_use]
 extern crate log;
-#[cfg(target_os = "windows")]
-extern crate winapi;
-#[cfg(target_os = "windows")]
-extern crate kernel32;
-#[cfg(target_os = "windows")]
-extern crate user32;
-#[cfg(target_os = "windows")]
-extern crate libc;
-#[cfg(target_os = "linux")]
-extern crate gtk;
 #[cfg(target_os = "linux")]
 extern crate glib;
 #[cfg(target_os = "linux")]
+extern crate gtk;
+#[cfg(target_os = "linux")]
 extern crate libappindicator;
+#[cfg(target_os = "windows")]
+extern crate libc;
+#[cfg(target_os = "windows")]
+extern crate winapi;
 
 pub mod api;
 
@@ -46,7 +42,9 @@ impl std::fmt::Display for SystrayError {
 
 impl From<u32> for SystrayEvent {
     fn from(menu_index: u32) -> Self {
-        Self{menu_index: menu_index}
+        Self {
+            menu_index: menu_index,
+        }
     }
 }
 
@@ -64,13 +62,15 @@ pub struct Application<'a> {
     // dealing with the OS main loop. Use this channel for receiving events from
     // that thread.
     rx: Receiver<SystrayEvent>,
-    tx: Option<Sender<SystrayEvent>>
+    tx: Option<Sender<SystrayEvent>>,
 }
 
 type Callback<'a> = Box<(dyn Fn(&mut Application) -> () + 'a)>;
 
 fn make_callback<'a, F>(f: F) -> Option<Callback<'a>>
-    where F: std::ops::Fn(&mut Application) -> () + 'a {
+where
+    F: std::ops::Fn(&mut Application) -> () + 'a,
+{
     Some(Box::new(f) as Callback<'a>)
 }
 
@@ -83,9 +83,9 @@ impl<'a> Application<'a> {
                 menu_idx: 0,
                 callback: HashMap::new(),
                 rx: event_rx,
-                tx: Some(event_tx)
+                tx: Some(event_tx),
             }),
-            Err(e) => Err(e)
+            Err(e) => Err(e),
         }
     }
 
@@ -94,7 +94,8 @@ impl<'a> Application<'a> {
     }
 
     pub fn add_callback<F>(&mut self, f: F) -> SystrayEvent
-        where F: std::ops::Fn(&mut Application) -> () + 'a
+    where
+        F: std::ops::Fn(&mut Application) -> () + 'a,
     {
         let idx = self.menu_idx;
         self.callback.insert(idx, make_callback(f));
@@ -102,8 +103,13 @@ impl<'a> Application<'a> {
         SystrayEvent::from(idx)
     }
 
-    pub fn add_menu_item<F>(&mut self, item_name: &String, f: F) -> Result<SystrayEvent, SystrayError>
-        where F: std::ops::Fn(&mut Application) -> () + 'a
+    pub fn add_menu_item<F>(
+        &mut self,
+        item_name: &String,
+        f: F,
+    ) -> Result<SystrayEvent, SystrayError>
+    where
+        F: std::ops::Fn(&mut Application) -> () + 'a,
     {
         let idx = self.menu_idx;
         if let Err(e) = self.window.add_menu_entry(idx, item_name) {
@@ -129,7 +135,12 @@ impl<'a> Application<'a> {
         self.window.set_icon_from_resource(resource)
     }
 
-    pub fn set_icon_from_buffer(&self, buffer: &[u8], width: u32, height: u32) -> Result<(), SystrayError> {
+    pub fn set_icon_from_buffer(
+        &self,
+        buffer: &[u8],
+        width: u32,
+        height: u32,
+    ) -> Result<(), SystrayError> {
         self.window.set_icon_from_buffer(buffer, width, height)
     }
 
@@ -161,7 +172,10 @@ impl<'a> Application<'a> {
                 None => continue,
             };
             callback_function(self);
-            self.callback.get_mut(&msg.menu_index).unwrap().replace(callback_function);
+            self.callback
+                .get_mut(&msg.menu_index)
+                .unwrap()
+                .replace(callback_function);
         }
     }
 }

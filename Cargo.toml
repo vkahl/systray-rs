@@ -14,9 +14,7 @@ edition = "2018"
 log= "0.4"
 
 [target.'cfg(target_os = "windows")'.dependencies]
-winapi= "0.2"
-user32-sys= "0.2.0"
-kernel32-sys= "0.2.2"
+winapi= {version="0.3", features=["winuser", "shellapi", "impl-debug"]}
 libc= "0.2"
 
 [target.'cfg(target_os = "linux")'.dependencies]
