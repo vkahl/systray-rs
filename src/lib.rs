@@ -144,7 +144,7 @@ impl<'a> Application<'a> {
         self.window.set_icon_from_buffer(buffer, width, height)
     }
 
-    pub fn shutdown(&self) -> Result<(), SystrayError> {
+    pub fn shutdown(&mut self) -> Result<(), SystrayError> {
         self.window.shutdown()
     }
 

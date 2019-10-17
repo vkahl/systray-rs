@@ -446,9 +446,7 @@ impl Window {
             }
 
             self.set_icon(hicon)?;
-            if self.prev_hicon != std::ptr::null_mut() as HICON {
-                unsafe { DestroyIcon(self.prev_hicon) };
-            }
+            self.destroy_prev_icon();
             self.prev_hicon = hicon;
             Ok(())
         } else {
@@ -456,7 +454,8 @@ impl Window {
         }
     }
 
-    pub fn shutdown(&self) -> Result<(), SystrayError> {
+    pub fn shutdown(&mut self) -> Result<(), SystrayError> {
+        self.destroy_prev_icon();
         unsafe {
             let mut nid = get_nid_struct(&self.info.hwnd);
             nid.uFlags = NIF_ICON;
@@ -465,6 +464,12 @@ impl Window {
             }
         }
         Ok(())
+    }
+
+    fn destroy_prev_icon(&mut self) {
+        if self.prev_hicon != std::ptr::null_mut() as HICON {
+            unsafe { DestroyIcon(self.prev_hicon) };
+        }
     }
 }
 
