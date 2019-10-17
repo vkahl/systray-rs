@@ -136,7 +136,7 @@ impl<'a> Application<'a> {
     }
 
     pub fn set_icon_from_buffer(
-        &self,
+        &mut self,
         buffer: &[u8],
         width: u32,
         height: u32,

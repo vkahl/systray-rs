@@ -21,13 +21,14 @@ use winapi::{
     um::{
         errhandlingapi, libloaderapi,
         shellapi::{
-            NOTIFYICONDATAW, NOTIFYICONDATAW_u, Shell_NotifyIconW, NIF_ICON, NIF_MESSAGE, NIF_TIP, NIM_ADD,
-            NIM_DELETE, NIM_MODIFY,
+            NOTIFYICONDATAW_u, Shell_NotifyIconW, NIF_ICON, NIF_MESSAGE, NIF_TIP, NIM_ADD,
+            NIM_DELETE, NIM_MODIFY, NOTIFYICONDATAW,
         },
         winnt::LPCWSTR,
         winuser::{
-            self, CW_USEDEFAULT, IMAGE_ICON, LR_DEFAULTCOLOR, LR_LOADFROMFILE, MENUITEMINFOW,
-            WM_DESTROY, WM_USER, WNDCLASSW, WS_OVERLAPPEDWINDOW,
+            self, CreateIconFromResourceEx, DestroyIcon, LookupIconIdFromDirectoryEx,
+            CW_USEDEFAULT, IMAGE_ICON, LR_DEFAULTCOLOR, LR_LOADFROMFILE, MENUITEMINFOW, WM_DESTROY,
+            WM_USER, WNDCLASSW, WS_OVERLAPPEDWINDOW,
         },
     },
 };
@@ -249,6 +250,7 @@ unsafe fn run_loop() {
 pub struct Window {
     info: WindowInfo,
     windows_loop: Option<thread::JoinHandle<()>>,
+    prev_hicon: HICON,
 }
 
 impl Window {
@@ -288,6 +290,7 @@ impl Window {
         let w = Window {
             info: info,
             windows_loop: Some(windows_loop),
+            prev_hicon: std::ptr::null_mut() as HICON,
         };
         Ok(w)
     }
@@ -403,13 +406,13 @@ impl Window {
     }
 
     pub fn set_icon_from_buffer(
-        &self,
+        &mut self,
         buffer: &[u8],
         width: u32,
         height: u32,
     ) -> Result<(), SystrayError> {
         let offset = unsafe {
-            winuser::LookupIconIdFromDirectoryEx(
+            LookupIconIdFromDirectoryEx(
                 buffer.as_ptr() as PBYTE,
                 TRUE,
                 width as i32,
@@ -420,10 +423,11 @@ impl Window {
 
         if offset != 0 {
             let icon_data = &buffer[offset as usize..];
+
             let hicon = unsafe {
-                winuser::CreateIconFromResourceEx(
+                CreateIconFromResourceEx(
                     icon_data.as_ptr() as PBYTE,
-                    0,
+                    (buffer.len() as i32 - offset) as u32,
                     TRUE,
                     0x30000,
                     width as i32,
@@ -433,10 +437,20 @@ impl Window {
             };
 
             if hicon == std::ptr::null_mut() as HICON {
-                return Err(unsafe { get_win_os_error("Cannot load icon from the buffer") });
+                return Err(unsafe {
+                    get_win_os_error(&format!(
+                        "Cannot load icon from the buffer ({})",
+                        errhandlingapi::GetLastError()
+                    ))
+                });
             }
 
-            self.set_icon(hicon)
+            self.set_icon(hicon)?;
+            if self.prev_hicon != std::ptr::null_mut() as HICON {
+                unsafe { DestroyIcon(self.prev_hicon) };
+            }
+            self.prev_hicon = hicon;
+            Ok(())
         } else {
             Err(unsafe { get_win_os_error("Error setting icon from buffer") })
         }
