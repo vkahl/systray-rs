@@ -1,6 +1,6 @@
 [package]
 name = "systray"
-version = "0.3.1"
+version = "0.3.2"
 authors = ["Kyle Machulis <kyle@machul.is>"]
 description = "Rust library for making minimal cross-platform systray GUIs"
 license = "BSD-3-Clause"
@@ -14,7 +14,7 @@ edition = "2018"
 log= "0.4"
 
 [target.'cfg(target_os = "windows")'.dependencies]
-winapi= {version="0.3", features=["winuser", "shellapi", "impl-debug"]}
+winapi= {version="0.3", features=["winuser", "shellapi", "impl-debug", "impl-default"]}
 libc= "0.2"
 
 [target.'cfg(target_os = "linux")'.dependencies]

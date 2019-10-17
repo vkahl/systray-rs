@@ -13,20 +13,22 @@ use winapi::{
     self,
     ctypes::{c_ulong, c_ushort},
     shared::{
+        basetsd::ULONG_PTR,
         guiddef::GUID,
         minwindef::{DWORD, HINSTANCE, LPARAM, LRESULT, PBYTE, TRUE, UINT, WPARAM},
         windef::{self, HBITMAP, HBRUSH, HICON, HMENU, HWND},
-        basetsd::ULONG_PTR,
     },
     um::{
+        errhandlingapi, libloaderapi,
+        shellapi::{
+            NOTIFYICONDATAW, NOTIFYICONDATAW_u, Shell_NotifyIconW, NIF_ICON, NIF_MESSAGE, NIF_TIP, NIM_ADD,
+            NIM_DELETE, NIM_MODIFY,
+        },
         winnt::LPCWSTR,
         winuser::{
-            self, CW_USEDEFAULT, LR_DEFAULTCOLOR, MENUITEMINFOW, WNDCLASSW,
-            WS_OVERLAPPEDWINDOW, IMAGE_ICON, LR_LOADFROMFILE, WM_USER, WM_DESTROY
+            self, CW_USEDEFAULT, IMAGE_ICON, LR_DEFAULTCOLOR, LR_LOADFROMFILE, MENUITEMINFOW,
+            WM_DESTROY, WM_USER, WNDCLASSW, WS_OVERLAPPEDWINDOW,
         },
-        libloaderapi,
-        errhandlingapi,
-        shellapi::{NIF_ICON, NIM_MODIFY, NIM_DELETE, NIM_ADD, NIF_MESSAGE, NIF_TIP},
     },
 };
 
@@ -127,7 +129,8 @@ fn get_nid_struct(hwnd: &HWND) -> NOTIFYICONDATAW {
         dwState: 0 as DWORD,
         dwStateMask: 0 as DWORD,
         szInfo: [0 as u16; 256],
-        uTimeout: 0 as UINT,
+        // uTimeout: 0 as UINT,
+        u: NOTIFYICONDATAW_u::default(),
         szInfoTitle: [0 as u16; 64],
         dwInfoFlags: 0 as UINT,
         guidItem: GUID {
@@ -326,12 +329,8 @@ impl Window {
         item.dwTypeData = st.as_mut_ptr();
         item.cch = (item_name.len() * 2) as u32;
         unsafe {
-            if winuser::InsertMenuItemW(
-                self.info.hmenu,
-                item_idx,
-                1,
-                &item as *const MENUITEMINFOW,
-            ) == 0
+            if winuser::InsertMenuItemW(self.info.hmenu, item_idx, 1, &item as *const MENUITEMINFOW)
+                == 0
             {
                 return Err(get_win_os_error("Error inserting menu item"));
             }
@@ -345,12 +344,8 @@ impl Window {
         item.fType = MFT_SEPARATOR;
         item.wID = item_idx;
         unsafe {
-            if winuser::InsertMenuItemW(
-                self.info.hmenu,
-                item_idx,
-                1,
-                &item as *const MENUITEMINFOW,
-            ) == 0
+            if winuser::InsertMenuItemW(self.info.hmenu, item_idx, 1, &item as *const MENUITEMINFOW)
+                == 0
             {
                 return Err(get_win_os_error("Error inserting separator"));
             }
