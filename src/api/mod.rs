@@ -1,5 +1,6 @@
 #[cfg(target_os = "windows")]
 #[path = "win32/mod.rs"]
+#[allow(clippy::module_inception)]
 pub mod api;
 
 #[cfg(target_os = "linux")]

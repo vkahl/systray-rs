@@ -4,30 +4,33 @@ use gtk::{
     WindowType,
 };
 use libappindicator::{AppIndicator, AppIndicatorStatus};
-use std;
-use std::cell::RefCell;
-use std::collections::HashMap;
-use std::sync::mpsc::{channel, Sender};
-use std::thread;
-use {SystrayError, SystrayEvent};
+use std::{
+    self,
+    cell::RefCell,
+    collections::HashMap,
+    sync::mpsc::{channel, Sender},
+    thread,
+};
+use SystrayError;
+use SystrayEvent;
 
 // Gtk specific struct that will live only in the Gtk thread, since a lot of the
 // base types involved don't implement Send (for good reason).
 pub struct GtkSystrayApp {
-    menu: gtk::Menu,
-    ai: RefCell<AppIndicator>,
+    menu:       gtk::Menu,
+    ai:         RefCell<AppIndicator>,
     menu_items: RefCell<HashMap<u32, gtk::MenuItem>>,
-    event_tx: Sender<SystrayEvent>,
+    event_tx:   Sender<SystrayEvent>,
 }
 
 thread_local!(static GTK_STASH: RefCell<Option<GtkSystrayApp>> = RefCell::new(None));
 
 pub struct MenuItemInfo {
-    mid: u32,
-    title: String,
-    tooltip: String,
+    mid:      u32,
+    title:    String,
+    tooltip:  String,
     disabled: bool,
-    checked: bool,
+    checked:  bool,
 }
 
 type Callback = Box<(Fn(&GtkSystrayApp) -> () + 'static)>;
@@ -64,16 +67,12 @@ impl GtkSystrayApp {
             menu: m,
             ai: RefCell::new(ai),
             menu_items: RefCell::new(HashMap::new()),
-            event_tx: event_tx,
+            event_tx,
         })
     }
 
     pub fn systray_menu_selected(&self, menu_id: u32) {
-        self.event_tx
-            .send(SystrayEvent {
-                menu_index: menu_id as u32,
-            })
-            .ok();
+        self.event_tx.send(SystrayEvent { menu_index: menu_id as u32 }).ok();
     }
 
     pub fn add_menu_separator(&self, item_idx: u32) {
@@ -84,7 +83,7 @@ impl GtkSystrayApp {
         self.menu.show_all();
     }
 
-    pub fn add_menu_entry(&self, item_idx: u32, item_name: &String) {
+    pub fn add_menu_entry(&self, item_idx: u32, item_name: &str) {
         let mut menu_items = self.menu_items.borrow_mut();
         if menu_items.contains_key(&item_idx) {
             let m: &gtk::MenuItem = menu_items.get(&item_idx).unwrap();
@@ -103,7 +102,7 @@ impl GtkSystrayApp {
         self.menu.show_all();
     }
 
-    pub fn set_icon_from_file(&self, file: &String) {
+    pub fn set_icon_from_file(&self, file: &str) {
         let mut ai = self.ai.borrow_mut();
         ai.set_icon_full(file, "icon");
     }
@@ -121,23 +120,21 @@ impl Window {
                 Ok(data) => {
                     (*stash.borrow_mut()) = Some(data);
                     tx.send(Ok(()));
-                }
+                },
                 Err(e) => {
                     tx.send(Err(e));
                     return;
-                }
+                },
             });
             gtk::main();
         });
         match rx.recv().unwrap() {
-            Ok(()) => Ok(Window {
-                gtk_loop: Some(gtk_loop),
-            }),
+            Ok(()) => Ok(Window { gtk_loop: Some(gtk_loop) }),
             Err(e) => Err(e),
         }
     }
 
-    pub fn add_menu_entry(&self, item_idx: u32, item_name: &String) -> Result<(), SystrayError> {
+    pub fn add_menu_entry(&self, item_idx: u32, item_name: &str) -> Result<(), SystrayError> {
         let n = item_name.clone();
         run_on_gtk_thread(move |stash: &GtkSystrayApp| {
             stash.add_menu_entry(item_idx, &n);
@@ -152,7 +149,7 @@ impl Window {
         Ok(())
     }
 
-    pub fn set_icon_from_file(&self, file: &String) -> Result<(), SystrayError> {
+    pub fn set_icon_from_file(&self, file: &str) -> Result<(), SystrayError> {
         let n: String = file.clone();
         run_on_gtk_thread(move |stash: &GtkSystrayApp| {
             stash.set_icon_from_file(&n);
@@ -164,9 +161,7 @@ impl Window {
         panic!("Not implemented on this platform!");
     }
 
-    pub fn shutdown(&self) -> Result<(), SystrayError> {
-        Ok(())
-    }
+    pub fn shutdown(&self) -> Result<(), SystrayError> { Ok(()) }
 
     pub fn set_tooltip(&self, tooltip: &str) -> Result<(), SystrayError> {
         panic!("Not implemented on this platform!");
